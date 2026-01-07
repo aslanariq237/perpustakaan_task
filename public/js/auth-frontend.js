@@ -37,8 +37,8 @@ function updateNavbar() {
           <span>Halo, ${user.username} <small>(${user.role})</small></span>
         </a>
         <ul class="dropdown-menu dropdown-menu-end">
-          ${user.role === 'user' ? '<li><a class="dropdown-item" href="/user/dashboard.html"><i class="bi bi-speedometer2"></i> Dashboard Saya</a></li>' : ''}
-          ${user.role === 'admin' ? '<li><a class="dropdown-item" href="/admin/admin.html"><i class="bi bi-gear"></i> Admin Panel</a></li>' : ''}
+          ${user.role === 'user' ? '<li><a class="dropdown-item" href="/user/dashboard"><i class="bi bi-speedometer2"></i> Dashboard Saya</a></li>' : ''}
+          ${user.role === 'admin' ? '<li><a class="dropdown-item" href="/admin"><i class="bi bi-gear"></i> Admin Panel</a></li>' : ''}
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item text-danger" href="#" id="logout-btn"><i class="bi bi-box-arrow-right"></i> Logout</a></li>
         </ul>

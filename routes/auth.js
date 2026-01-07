@@ -1,12 +1,14 @@
-// routes/auth.js
+// routes/auth.js (versi lebih aman untuk production)
+
 const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SERVICES;
+const JWT_SECRET = process.env.JWT_SECRET || 'perpustakaan_rahasia_2026'; // jangan hardcode di prod!
 const JWT_EXPIRES_IN = '7d';
 
+// REGISTER
 router.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -24,7 +26,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ message: 'Username sudah terdaftar' });
     }
 
-    const user = new User({ username, password });
+    const user = new User({ username, password }); // password plain dulu
     await user.save();
 
     const token = jwt.sign(
@@ -39,12 +41,12 @@ router.post('/register', async (req, res) => {
       user: { id: user._id, username: user.username, role: user.role }
     });
   } catch (err) {
-    console.error('Register error:', err);
-    res.status(500).json({ message: 'Terjadi kesalahan server' });
+    console.error('Register error:', err); // ini penting untuk log di Vercel
+    res.status(500).json({ message: 'Terjadi kesalahan server saat registrasi' });
   }
 });
 
-// LOGIN (tanpa bcrypt)
+// LOGIN
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -75,8 +77,8 @@ router.post('/login', async (req, res) => {
       user: { id: user._id, username: user.username, role: user.role }
     });
   } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ message: 'Terjadi kesalahan server' });
+    console.error('Login error:', err); // log error ke console Vercel
+    res.status(500).json({ message: 'Terjadi kesalahan server saat login' });
   }
 });
 
