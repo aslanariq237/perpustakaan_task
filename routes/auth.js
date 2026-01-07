@@ -5,7 +5,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET || 'perpustakaan_rahasia_2026';
 const JWT_EXPIRES_IN = '7d';
 
 // REGISTER

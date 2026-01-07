@@ -5,7 +5,7 @@ const path = require('path');
 require('dotenv').config();
 
 const app = express();
-const MONGO_URI = process.env.MONGO_URI
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://admin:gsWafKZ7etfJVeyj@librarycluster.caumvvi.mongodb.net/libraryDB?retryWrites=true&w=majority';
 const PORT = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
