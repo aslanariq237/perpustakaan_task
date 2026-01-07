@@ -1,0 +1,39 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json  # optional, kalau kamu pakai npm bisa di-ignore biar clean
+yarn.lock          # kalau pakai yarn
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
+# Logs
+logs
+*.log
+
+# Build / Cache Vercel
+.vercel
+.output
+.dist
+
+# OS files
+.DS_Store          # macOS
+Thumbs.db          # Windows
+
+# Editor folders
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Temporary files
+tmp/
+temp/

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Admin - Perpustakaan Digital</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f4f8;
+      margin: 0;
+      padding: 0;      
+    }
+    .admin-header {
+      background: linear-gradient(rgba(30, 144, 255, 0.9), rgba(255, 165, 0, 0.9)),
+        url('https://img.freepik.com/premium-photo/blue-orange-white-grainy-gradient-abstract-background-noise-texture-effect-poster-header-banner-design_284753-2588.jpg');
+      background-size: cover;
+      background-position: center;
+      color: white;
+      text-align: center;
+      padding: 80px 20px;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    .admin-header h1 { font-size: 3rem; margin: 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.4); }
+    .admin-header p { font-size: 1.4rem; margin: 15px 0; }
+    .admin-header a {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      padding: 12px 30px;
+      border-radius: 50px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      margin-top: 20px;
+      transition: 0.3s;
+    }
+    .admin-header a:hover { background: white; color: #1e90ff; }
+
+    .admin-container { max-width: 1400px; margin: 40px auto; padding: 20px; }
+    .admin-controls { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+    .refresh-btn { background: #ffa500; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; }
+    .refresh-btn:hover { background: #ff8c00; }
+
+    #booksGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+    .book-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; }
+    .book-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+    .book-cover { height: 300px; overflow: hidden; }
+    .book-cover img { width: 100%; height: 100%; object-fit: cover; }
+    .book-info { padding: 20px; }
+    .book-info h3 { margin: 0 0 10px; color: #1e90ff; font-size: 1.4rem; }
+    .book-info p { margin: 8px 0; color: #555; }
+    .stock-info { display: flex; align-items: center; gap: 10px; margin: 15px 0; font-weight: 600; }
+    .stock-low { background: #ffebee; color: #c62828; padding: 8px 12px; border-radius: 8px; }
+    .stock-normal { background: #e8f5e8; color: #2e7d32; padding: 8px 12px; border-radius: 8px; }
+    .update-stock { display: flex; gap: 10px; margin-top: 15px; }
+    .update-stock input { width: 80px; padding: 8px; border: 1px solid #1e90ff; border-radius: 6px; }
+    .update-stock button { background: #ffa500; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; }
+    .update-stock button:hover { background: #ff8c00; }
+    .loading { text-align: center; padding: 50px; font-size: 1.2rem; color: #666; }
+
+    @media (max-width: 768px) {
+      #booksGrid { grid-template-columns: 1fr; }
+      .admin-header h1 { font-size: 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="navbar-container"></div>
+
+  <header class="admin-header">
+    <h1>Dashboard Admin</h1>
+    <p>Kelola koleksi buku dan stok perpustakaan dengan mudah</p>
+    <a href="add-book.html">+ Tambah Buku Baru</a>
+  </header>
+
+  <div class="admin-container">
+    <div class="admin-controls">
+      <h2>Daftar Buku (Total: <span id="totalBooks">0</span>)</h2>
+      <button class="refresh-btn" onclick="loadAdminBooks()">🔄 Refresh Data</button>
+    </div>
+    <div id="loading" class="loading">Memuat data buku...</div>
+    <div id="booksGrid"></div>
+  </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    fetch('/components/navbar.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('navbar-container').innerHTML = html;
+        
+        const authScript = document.createElement('script');
+        authScript.src = '/js/auth-frontend.js';
+        authScript.onload = () => {
+          console.log('auth-frontend.js loaded');
+          checkAdminAccessAndLoadBooks();
+        };
+        document.body.appendChild(authScript);
+      })
+      .catch(err => console.error('Gagal load navbar:', err));
+  </script>
+  
+  <script>
+    const placeholderImg = 'https://thumbs.dreamstime.com/b/blank-white-book-cover-mockup-grey-background-clean-minimalist-white-book-cover-mockup-standing-upright-subtle-light-410462937.jpg';
+
+    function checkAdminAccessAndLoadBooks() {
+      const interval = setInterval(() => {
+        if (typeof getCurrentUser === 'function' && typeof getToken === 'function') {
+          const user = getCurrentUser();
+          const token = getToken();
+
+          if (!user || !token) {
+            alert('Anda belum login. Silakan login terlebih dahulu.');
+            window.location.href = '/auth/login.html';
+            clearInterval(interval);
+            return;
+          }
+
+          if (user.role !== 'admin') {
+            alert('Akses ditolak! Halaman ini hanya untuk Admin.');
+            window.location.href = '/index.html';
+            clearInterval(interval);
+            return;
+          }
+          
+          if (typeof updateNavbar === 'function') updateNavbar();
+          loadAdminBooks(token);
+          clearInterval(interval);
+        }
+      }, 100);
+    }
+
+    async function loadAdminBooks(token) {
+      const grid = document.getElementById('booksGrid');
+      const loading = document.getElementById('loading');
+      const totalEl = document.getElementById('totalBooks');
+      grid.innerHTML = '';
+      loading.style.display = 'block';
+
+      try {
+        const response = await fetch('/api/admin/books', {
+          headers: {
+            'Authorization': 'Bearer ' + token
+          }
+        });
+
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            alert('Sesi habis atau akses ditolak. Silakan login ulang.');
+            localStorage.clear();
+            window.location.href = '/auth/login.html';
+            return;
+          }
+          throw new Error('Gagal mengambil data');
+        }
+
+        const books = await response.json();
+        totalEl.textContent = books.length;
+        loading.style.display = 'none';
+
+        if (books.length === 0) {
+          grid.innerHTML = '<p style="text-align:center; grid-column:1/-1; font-size:1.2rem;">Belum ada buku di database.</p>';
+          return;
+        }
+
+        books.forEach(book => {
+          const card = document.createElement('div');
+          card.className = 'book-card';
+          const stockClass = book.stock < 5 ? 'stock-low' : 'stock-normal';
+          const stockIcon = book.stock < 5 ? '⚠️ ' : '✔ ';
+
+          card.innerHTML = `
+            <div class="book-cover">
+              <img src="${book.imageUrl || placeholderImg}" alt="${book.title}" onerror="this.src='${placeholderImg}'">
+            </div>
+            <div class="book-info">
+              <h3>${book.title}</h3>
+              <p><strong>Penulis:</strong> ${book.author || 'Tidak diketahui'}</p>
+              <p><strong>Kategori:</strong> ${book.category || '-'}</p>
+              <p><strong>Dipinjam:</strong> ${book.borrowCount || 0} kali</p>
+              <div class="stock-info ${stockClass}">
+                ${stockIcon} Stok Sisa: <strong>${book.stock}</strong>
+              </div>
+              <div class="update-stock">
+                <input type="number" min="0" value="${book.stock}" id="stock-${book._id}">
+                <button onclick="updateStock('${book._id}', '${token}')">Update Stok</button>
+              </div>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+
+      } catch (err) {
+        console.error(err);
+        loading.innerHTML = '<p style="color:red;">Gagal memuat data. Periksa koneksi atau token.</p>';
+      }
+    }
+
+    async function updateStock(id, token) {
+      const input = document.getElementById(`stock-${id}`);
+      const newStock = parseInt(input.value);
+      if (isNaN(newStock) || newStock < 0) {
+        alert('Masukkan angka stok yang valid!');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/admin/update-stock/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify({ stock: newStock })
+        });
+
+        const data = await response.json();
+        alert(data.message || 'Stok berhasil diperbarui!');
+        loadAdminBooks(token);
+      } catch (err) {
+        alert('Gagal update stok!');
+      }
+    }
+  </script>
+</body>
+</html>

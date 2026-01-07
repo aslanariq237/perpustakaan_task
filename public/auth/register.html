@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Register - Perpustakaan Digital</title>  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to bottom, #f0f4f8, #e0eafc);
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    nav {
+      background: linear-gradient(to right, #1e90ff, #ffa500);
+      padding: 15px 30px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    nav a {
+      color: white;
+      margin: 0 20px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    nav a:hover {
+      text-decoration: underline;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 60px auto;
+      padding: 0 20px;
+      flex: 1;
+    }
+
+    .register-card {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+      padding: 50px 40px;
+      text-align: center;
+    }
+
+    h1 {
+      color: #1e90ff;
+      margin-bottom: 10px;
+      font-size: 2.8rem;
+    }
+
+    p.subtitle {
+      color: #555;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .form-group {
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #1e90ff;
+      font-weight: 600;
+    }
+
+    input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      font-size: 1rem;
+      box-sizing: border-box;
+      transition: border 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #1e90ff;
+      box-shadow: 0 0 0 3px rgba(30,144,255,0.2);
+    }
+
+    .register-btn {
+      background: linear-gradient(to right, #1e90ff, #00bfff);
+      color: white;
+      border: none;
+      padding: 16px 40px;
+      border-radius: 50px;
+      font-size: 1.2rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 30px;
+      transition: all 0.3s;
+      box-shadow: 0 8px 20px rgba(30,144,255,0.3);
+    }
+
+    .register-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(30,144,255,0.4);
+    }
+
+    .register-btn:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .message {
+      padding: 15px;
+      border-radius: 10px;
+      margin: 20px 0;
+      font-weight: 600;
+      display: none;
+    }
+
+    .success {
+      background: #e8f5e8;
+      color: #2e7d32;
+      border: 1px solid #4caf50;
+    }
+
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      border: 1px solid #f44336;
+    }
+
+    .link {
+      margin-top: 30px;
+      font-size: 1rem;
+    }
+
+    .link a {
+      color: #ffa500;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .link a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .register-card { padding: 40px 20px; }
+      h1 { font-size: 2.4rem; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <a href="/">Beranda</a>
+    <a href="/login">Login</a>
+  </nav>
+
+  <div class="container">
+    <div class="register-card">
+      <h1>Daftar Akun Baru</h1>
+      <p class="subtitle">Bergabunglah dengan perpustakaan digital kami</p>
+
+      <div id="message" class="message"></div>
+
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            required
+            minlength="3"
+            placeholder="Minimal 3 karakter, unik"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input
+            type="password"
+            id="password"
+            required
+            minlength="6"
+            placeholder="Minimal 6 karakter"
+          />
+        </div>
+
+        <button type="submit" class="register-btn" id="submitBtn">
+          Daftar Sekarang
+        </button>
+      </form>
+
+      <div class="link">
+        Sudah punya akun? <a href="../login.html">Login di sini</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const messageDiv = document.getElementById('message');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Reset pesan
+      messageDiv.style.display = 'none';
+      messageDiv.className = 'message';
+
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+
+      // Validasi client-side
+      if (username.length < 3) {
+        showMessage('Username minimal 3 karakter!', 'error');
+        return;
+      }
+
+      if (password.length < 6) {
+        showMessage('Password minimal 6 karakter!', 'error');
+        return;
+      }
+
+      // Loading state
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Mendaftar...';
+
+      try {
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          // Simpan token & user
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          showMessage('Registrasi berhasil! Mengarahkan ke beranda...', 'success');
+
+          // Redirect setelah 1.5 detik
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 1500);
+        } else {
+          // Error dari server (misal username sudah ada)
+          showMessage(data.message || 'Registrasi gagal. Coba lagi.', 'error');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Daftar Sekarang';
+        }
+      } catch (err) {
+        console.error('Error:', err);
+        showMessage('Tidak dapat terhubung ke server. Periksa koneksi internet.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Daftar Sekarang';
+      }
+    });
+
+    function showMessage(text, type) {
+      messageDiv.textContent = text;
+      messageDiv.className = `message ${type}`;
+      messageDiv.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

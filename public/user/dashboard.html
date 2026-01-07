@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Saya - Perpustakaan Digital</title>
+  <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
+    body { font-family: 'Poppins', sans-serif; background: #f4f7fa; margin: 0; }
+    header {
+      background: linear-gradient(to right, #1e90ff, #ffa500);
+      color: white;
+      text-align: center;
+      padding: 80px 20px;
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 3rem; margin: 0; text-shadow: 2px 2px 8px rgba(0,0,0,0.4); }
+    header p { font-size: 1.4rem; margin: 15px 0; }
+
+    .container { max-width: 1200px; margin: 40px auto; padding: 20px; }
+
+    .welcome-card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .welcome-card h2 { color: #1e90ff; }
+
+    #booksGrid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 25px;
+      margin-bottom: 60px;
+    }
+
+    .book-card {
+      background: white;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+    .book-card:hover { transform: translateY(-10px); box-shadow: 0 15px 40px rgba(0,0,0,0.2); }
+
+    .book-cover img { width: 100%; height: 350px; object-fit: cover; }
+    .book-info { padding: 20px; }
+    .book-info h3 { color: #1e90ff; margin: 0 0 10px; }
+    .stock-info { font-weight: 600; margin: 15px 0; }
+    .stock-low { color: #c62828; }
+
+    .borrow-btn {
+      width: 100%; padding: 12px; background: #4caf50; color: white;
+      border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+    }
+    .borrow-btn:hover:not(:disabled) { background: #45a049; }
+    .borrow-btn:disabled { background: #ccc; cursor: not-allowed; }
+
+    .history-card {
+      background: white;
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background: #1e90ff; color: white; padding: 15px; }
+    td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
+    tr:hover { background: #f0f8ff; }
+
+    @media (max-width: 768px) {
+      header h1 { font-size: 2.5rem; }
+      #booksGrid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="navbar-container"></div>
+  <header>
+    <h1>Selamat Datang Kembali!</h1>
+    <p id="welcomeText">Memuat informasi akun...</p>
+  </header>
+
+  <div class="container">
+    <!-- Welcome -->
+    <div class="welcome-card">
+      <h2 id="userName">User</h2>
+      <p>Kelola peminjaman buku Anda di sini</p>
+    </div>
+
+    <!-- Buku Tersedia -->
+    <h2 style="color:#1e90ff; border-bottom:3px solid #ffa500; padding-bottom:10px;">Buku Tersedia untuk Dipinjam</h2>
+    <div id="booksGrid"></div>
+
+    <!-- Riwayat Peminjaman -->
+    <div class="history-card">
+      <h2 style="color:#1e90ff; text-align:center;">Riwayat Peminjaman Saya</h2>
+      <table id="historyTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Tanggal Pinjam</th>
+            <th>Judul Buku</th>
+            <th>Penulis</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+    if (!token || !user) {
+      alert('Anda harus login terlebih dahulu!');
+      window.location.href = '/login';
+    }
+
+    // Set welcome
+    document.getElementById('welcomeText').textContent = `Halo, ${user.username}! Selamat datang di dashboard Anda.`;
+    document.getElementById('userName').textContent = user.username;
+
+    // Load buku
+    async function loadBooks() {
+      try {
+        const res = await fetch('/api/books', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const books = await res.json();
+        const grid = document.getElementById('booksGrid');
+        grid.innerHTML = books.length === 0 ? '<p style="grid-column:1/-1;text-align:center;">Tidak ada buku tersedia saat ini.</p>' : '';
+
+        books.forEach((book, i) => {
+          const card = document.createElement('div');
+          card.className = 'book-card';
+          const stockClass = book.stock <= 0 ? 'stock-low' : '';
+          card.innerHTML = `
+            <div class="book-cover">
+              <img src="${book.imageUrl}" onerror="this.src='https://via.placeholder.com/300x450?text=No+Cover'" alt="${book.title}">
+            </div>
+            <div class="book-info">
+              <h3>${book.title}</h3>
+              <p><strong>Penulis:</strong> ${book.author}</p>
+              <p><strong>Kategori:</strong> ${book.category}</p>
+              <div class="stock-info ${stockClass}">Stok: ${book.stock}</div>
+              <button class="borrow-btn" onclick="borrowBook('${book._id}')" ${book.stock <= 0 ? 'disabled' : ''}>
+                ${book.stock > 0 ? 'Pinjam Buku' : 'Stok Habis'}
+              </button>
+            </div>
+          `;
+          grid.appendChild(card);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Pinjam buku
+    async function borrowBook(bookId) {
+      if (!confirm('Yakin ingin meminjam buku ini?')) return;
+
+      try {
+        const res = await fetch('/api/books/borrow', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ book_id: bookId, follow_instruct: true })
+        });
+        const data = await res.json();
+        alert(data.message);
+        loadBooks();
+        loadHistory();
+      } catch (err) {
+        alert('Gagal meminjam buku');
+      }
+    }
+
+    // Load riwayat
+    async function loadHistory() {
+      try {
+        const res = await fetch('/api/borrows/my-history', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const borrows = await res.json();
+        const tbody = document.querySelector('#historyTable tbody');
+        tbody.innerHTML = '';
+        if (borrows.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5">Belum ada riwayat peminjaman</td></tr>';
+          return;
+        }
+        borrows.forEach((b, i) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${i+1}</td>
+            <td>${new Date(b.issue_at).toLocaleDateString('id-ID')}</td>
+            <td>${b.bookSnapshot?.title || 'Unknown'}</td>
+            <td>${b.bookSnapshot?.author || '-'}</td>
+            <td><span style="color:#4caf50; font-weight:600;">${b.status}</span></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Load saat buka
+    loadBooks();
+    loadHistory();
+  </script>
+  <script>
+      // Load navbar.html dulu
+      fetch("/components/navbar.html")
+        .then((response) => {
+          if (!response.ok) throw new Error("Gagal load navbar");
+          return response.text();
+        })
+        .then((html) => {
+          document.getElementById("navbar-container").innerHTML = html;
+
+          const script = document.createElement("script");
+          script.src = "/js/auth-frontend.js";
+          script.onload = () => {
+            console.log("Navbar & Auth System berhasil dimuat");
+            if (typeof updateNavbar === "function") updateNavbar();
+          };
+          script.onerror = () => console.error("Gagal load auth-frontend.js");
+          document.body.appendChild(script);
+        })
+        .catch((err) => console.error(err));
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
+    />
+</body>
+</html>
