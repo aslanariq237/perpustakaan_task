@@ -6,10 +6,12 @@ const {
   getAllBooks,
   addBook,
   updateStock,
-  deleteBook
+  deleteBook,
+  getBookBorrowers
 } = require('../controller/BookController');
 
 router.get('/books', protect, adminOnly, getAllBooks);
+router.get('/book-borrowers/:id', protect, adminOnly, getBookBorrowers);
 
 router.post('/add-book', protect, adminOnly, addBook);
 

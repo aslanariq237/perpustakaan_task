@@ -1,4 +1,5 @@
 const Book = require("../models/book");
+const borrow = require("../models/borrow");
 
 exports.getAllBooks = async (req, res) => {
   try {
@@ -20,6 +21,22 @@ exports.getPopularBooks = async (req, res) => {
     res.json(popular);
   } catch (err) {
     res.status(500).json({ message: err.message });
+  }
+};
+
+exports.getBookBorrowers = async (req, res) => {
+  try {
+    const bookId = req.params.id;
+
+    const borrows = await borrow.find({ book: bookId })
+      .populate('user', 'username') // ambil username peminjam
+      .sort({ issue_at: -1 })
+      .lean();
+
+    res.json(borrows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengambil riwayat peminjam' });
   }
 };
 

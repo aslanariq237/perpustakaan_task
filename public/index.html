@@ -347,7 +347,7 @@
           const token = localStorage.getItem("token");
           if (!token) {
             alert("Anda harus login terlebih dahulu!");
-            window.location.href = "/login";
+            window.location.href = "/auth/login.html";
             return;
           }
 
@@ -488,8 +488,7 @@
 
           const script = document.createElement("script");
           script.src = "/js/auth-frontend.js";
-          script.onload = () => {
-            console.log("Navbar & Auth System berhasil dimuat");
+          script.onload = () => {            
             if (typeof updateNavbar === "function") updateNavbar();
           };
           script.onerror = () => console.error("Gagal load auth-frontend.js");

@@ -4,14 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard Saya - Perpustakaan Digital</title>
-  <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
 
-    body { font-family: 'Poppins', sans-serif; background: #f4f7fa; margin: 0; }
+    body { font-family: 'Poppins', sans-serif; background: #f4f7fa; margin: 0; padding-top: 80px; }
     header {
       background: linear-gradient(to right, #1e90ff, #ffa500);
       color: white;
@@ -66,42 +64,74 @@
 
     .history-card {
       background: white;
-      border-radius: 15px;
+      border-radius: 15px;      
       padding: 30px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+      margin-bottom: 60px;
     }
+
+    .filter-controls {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-controls input, .filter-controls select {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 1rem;
+    }
+
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th { background: #1e90ff; color: white; padding: 15px; }
     td { padding: 15px; border-bottom: 1px solid #eee; text-align: center; }
     tr:hover { background: #f0f8ff; }
 
+    .return-btn {
+      background: #dc3545; color: white; border: none; padding: 8px 16px;
+      border-radius: 8px; cursor: pointer; font-weight: 600;
+    }
+    .return-btn:hover { background: #c82333; }
+    .returned { color: #28a745; font-weight: 600; }
+
     @media (max-width: 768px) {
       header h1 { font-size: 2.5rem; }
       #booksGrid { grid-template-columns: 1fr; }
+      .filter-controls { flex-direction: column; }
     }
   </style>
 </head>
 <body>
+
   <div id="navbar-container"></div>
+
   <header>
     <h1>Selamat Datang Kembali!</h1>
     <p id="welcomeText">Memuat informasi akun...</p>
   </header>
 
   <div class="container">
-    <!-- Welcome -->
     <div class="welcome-card">
       <h2 id="userName">User</h2>
       <p>Kelola peminjaman buku Anda di sini</p>
-    </div>
+    </div>    
 
-    <!-- Buku Tersedia -->
-    <h2 style="color:#1e90ff; border-bottom:3px solid #ffa500; padding-bottom:10px;">Buku Tersedia untuk Dipinjam</h2>
-    <div id="booksGrid"></div>
-
-    <!-- Riwayat Peminjaman -->
+    <!-- Riwayat Peminjaman dengan Filter -->
     <div class="history-card">
-      <h2 style="color:#1e90ff; text-align:center;">Riwayat Peminjaman Saya</h2>
+      <h2 style="color:#1e90ff; text-align:center; margin-bottom: 20px;">Riwayat Peminjaman Saya</h2>
+      
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <input type="text" id="searchTitle" placeholder="Cari judul buku..." />
+        <select id="filterStatus">
+          <option value="all">Semua Status</option>
+          <option value="dipinjam">Sedang Dipinjam</option>
+          <option value="dikembalikan">Sudah Dikembalikan</option>
+        </select>
+      </div>
+
       <table id="historyTable">
         <thead>
           <tr>
@@ -110,12 +140,51 @@
             <th>Judul Buku</th>
             <th>Penulis</th>
             <th>Status</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
+
+    <!-- Buku Tersedia -->
+    <h2 style="color:#1e90ff; border-bottom:3px solid #ffa500; padding-bottom:10px;">Buku Tersedia untuk Dipinjam</h2>
+    <div id="booksGrid"></div>
   </div>
+
+  <!-- Modal Konfirmasi Pengembalian -->
+  <div class="modal fade" id="returnModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Konfirmasi Pengembalian Buku</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p>Yakin ingin mengembalikan buku <strong id="modalBookTitle"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="button" class="btn btn-danger" id="confirmReturnBtn">Ya, Kembalikan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Load Navbar -->
+  <script>
+    fetch("/components/navbar.html")
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById("navbar-container").innerHTML = html;
+        const script = document.createElement("script");
+        script.src = "/js/auth-frontend.js";
+        script.onload = () => updateNavbar && updateNavbar();
+        document.body.appendChild(script);
+      });
+  </script>
 
   <script>
     const token = localStorage.getItem('token');
@@ -123,24 +192,23 @@
 
     if (!token || !user) {
       alert('Anda harus login terlebih dahulu!');
-      window.location.href = '/login';
+      window.location.href = '/auth/login.html';
     }
 
-    // Set welcome
     document.getElementById('welcomeText').textContent = `Halo, ${user.username}! Selamat datang di dashboard Anda.`;
     document.getElementById('userName').textContent = user.username;
 
-    // Load buku
+    let currentBorrowId = null;
+    let allBorrows = []; // simpan semua data riwayat untuk filter
+
     async function loadBooks() {
       try {
-        const res = await fetch('/api/books', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const res = await fetch('/api/books', { headers: { 'Authorization': `Bearer ${token}` } });
         const books = await res.json();
         const grid = document.getElementById('booksGrid');
-        grid.innerHTML = books.length === 0 ? '<p style="grid-column:1/-1;text-align:center;">Tidak ada buku tersedia saat ini.</p>' : '';
+        grid.innerHTML = books.length === 0 ? '<p style="grid-column:1/-1;text-align:center;">Tidak ada buku tersedia.</p>' : '';
 
-        books.forEach((book, i) => {
+        books.forEach(book => {
           const card = document.createElement('div');
           card.className = 'book-card';
           const stockClass = book.stock <= 0 ? 'stock-low' : '';
@@ -160,92 +228,114 @@
           `;
           grid.appendChild(card);
         });
-      } catch (err) {
-        console.error(err);
-      }
+      } catch (err) { console.error(err); }
     }
 
-    // Pinjam buku
     async function borrowBook(bookId) {
       if (!confirm('Yakin ingin meminjam buku ini?')) return;
-
       try {
         const res = await fetch('/api/books/borrow', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ book_id: bookId, follow_instruct: true })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ book_id: bookId })
         });
         const data = await res.json();
         alert(data.message);
         loadBooks();
-        loadHistory();
-      } catch (err) {
-        alert('Gagal meminjam buku');
-      }
+        loadHistory(); // refresh riwayat
+      } catch (err) { alert('Gagal meminjam buku'); }
     }
 
-    // Load riwayat
     async function loadHistory() {
       try {
-        const res = await fetch('/api/borrows/my-history', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const borrows = await res.json();
-        const tbody = document.querySelector('#historyTable tbody');
-        tbody.innerHTML = '';
-        if (borrows.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="5">Belum ada riwayat peminjaman</td></tr>';
-          return;
-        }
-        borrows.forEach((b, i) => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-            <td>${i+1}</td>
-            <td>${new Date(b.issue_at).toLocaleDateString('id-ID')}</td>
-            <td>${b.bookSnapshot?.title || 'Unknown'}</td>
-            <td>${b.bookSnapshot?.author || '-'}</td>
-            <td><span style="color:#4caf50; font-weight:600;">${b.status}</span></td>
-          `;
-          tbody.appendChild(row);
-        });
-      } catch (err) {
+        const res = await fetch('/api/borrows/my-history', { headers: { 'Authorization': `Bearer ${token}` } });
+        allBorrows = await res.json(); // simpan semua data
+        renderHistory(allBorrows); // tampilkan semua dulu
+      } catch (err) { 
         console.error(err);
+        document.querySelector('#historyTable tbody').innerHTML = '<tr><td colspan="6" class="text-danger">Gagal memuat riwayat</td></tr>';
       }
     }
 
-    // Load saat buka
+    function renderHistory(borrows) {
+      const tbody = document.querySelector('#historyTable tbody');
+      tbody.innerHTML = '';
+
+      if (borrows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6">Tidak ada riwayat peminjaman yang sesuai filter</td></tr>';
+        return;
+      }
+
+      borrows.forEach((b, i) => {
+        const row = document.createElement('tr');
+        const isBorrowed = b.status === 'dipinjam';
+        row.innerHTML = `
+          <td>${i+1}</td>
+          <td>${new Date(b.issue_at).toLocaleDateString('id-ID')}</td>
+          <td>${b.bookSnapshot?.title || 'Unknown'}</td>
+          <td>${b.bookSnapshot?.author || '-'}</td>
+          <td><span class="${isBorrowed ? '' : 'returned'}">${b.status}</span></td>
+          <td>
+            ${isBorrowed ? `<button class="return-btn" onclick="openReturnModal('${b._id}', '${b.bookSnapshot?.title || 'Buku Ini'}')">Kembalikan</button>` : '-'}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Filter Real-time
+    document.getElementById('searchTitle').addEventListener('input', applyFilters);
+    document.getElementById('filterStatus').addEventListener('change', applyFilters);
+
+    function applyFilters() {
+      const search = document.getElementById('searchTitle').value.toLowerCase();
+      const statusFilter = document.getElementById('filterStatus').value;
+
+      let filtered = allBorrows;
+
+      // Filter berdasarkan judul
+      if (search) {
+        filtered = filtered.filter(b => 
+          (b.bookSnapshot?.title || '').toLowerCase().includes(search)
+        );
+      }
+
+      // Filter berdasarkan status
+      if (statusFilter !== 'all') {
+        filtered = filtered.filter(b => b.status === statusFilter);
+      }
+
+      renderHistory(filtered);
+    }
+
+    function openReturnModal(borrowId, bookTitle) {
+      currentBorrowId = borrowId;
+      document.getElementById('modalBookTitle').textContent = bookTitle;
+      new bootstrap.Modal(document.getElementById('returnModal')).show();
+    }
+
+    document.getElementById('confirmReturnBtn').addEventListener('click', async () => {
+      if (!currentBorrowId) return;
+
+      try {
+        const res = await fetch(`/api/borrows/return/${currentBorrowId}`, {
+          method: 'PUT',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        alert(data.message || 'Buku berhasil dikembalikan!');
+        loadHistory(); // refresh dengan filter tetap aktif
+        loadBooks();
+        bootstrap.Modal.getInstance(document.getElementById('returnModal')).hide();
+      } catch (err) {
+        alert('Gagal mengembalikan buku');
+      }
+    });
+
+    // Load data saat buka halaman
     loadBooks();
     loadHistory();
   </script>
-  <script>
-      // Load navbar.html dulu
-      fetch("/components/navbar.html")
-        .then((response) => {
-          if (!response.ok) throw new Error("Gagal load navbar");
-          return response.text();
-        })
-        .then((html) => {
-          document.getElementById("navbar-container").innerHTML = html;
 
-          const script = document.createElement("script");
-          script.src = "/js/auth-frontend.js";
-          script.onload = () => {
-            console.log("Navbar & Auth System berhasil dimuat");
-            if (typeof updateNavbar === "function") updateNavbar();
-          };
-          script.onerror = () => console.error("Gagal load auth-frontend.js");
-          document.body.appendChild(script);
-        })
-        .catch((err) => console.error(err));
-    </script>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"
-    />
 </body>
 </html>

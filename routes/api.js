@@ -6,13 +6,16 @@ const borrowController = require('../controller/BorrowController');
 const { protect } = require('../middleware/auth');
 
 
+// books
 router.get('/books', bookController.getAllBooks);
-router.get('/books/fiter', bookController.filterBook);
+router.get('/books/filter', bookController.filterBook);
+router.get('/popular-books', bookController.getPopularBooks);
 
 router.post('/books/borrow', protect, borrowController.borrowBook);
 
+// borrow
 router.get('/borrows/my-history', protect, borrowController.getMyHistory);
 
-router.get('/popular-books', bookController.getPopularBooks);
+router.put('/borrows/return/:id', protect, borrowController.returnBook);
 
 module.exports = router;

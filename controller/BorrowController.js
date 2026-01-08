@@ -45,6 +45,36 @@ exports.borrowBook = async (req, res) => {
   }
 };
 
+// Pengembalian buku oleh user
+exports.returnBook = async (req, res) => {
+  try {
+    const borrowId = req.params.id;
+    const userId = req.user.id; // dari middleware protect
+
+    const borrow = await Borrow.findOne({ _id: borrowId, user: userId });
+    if (!borrow) {
+      return res.status(404).json({ message: 'Peminjaman tidak ditemukan' });
+    }
+
+    if (borrow.status === 'dikembalikan') {
+      return res.status(400).json({ message: 'Buku sudah dikembalikan' });
+    }
+
+    // Update borrow
+    borrow.status = 'dikembalikan';
+    borrow.return_at = new Date();
+    await borrow.save();
+
+    // Tambah stok buku
+    await Book.findByIdAndUpdate(borrow.book, { $inc: { stock: 1 } });
+
+    res.json({ message: 'Buku berhasil dikembalikan!' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Gagal mengembalikan buku' });
+  }
+};
+
 exports.getMyHistory = async (req, res) => {
   try {
     const userId = req.user.id;
